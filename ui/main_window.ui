@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>900</width>
+    <height>650</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>校园失物招领平台</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <!-- 信息展示墙Tab -->
+      <widget class="QWidget" name="info_wall_tab">
+       <attribute name="title">
+        <string>信息展示墙</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="infoWallLayout">
+        <item>
+         <layout class="QHBoxLayout" name="searchLayout">
+          <item>
+           <widget class="QLineEdit" name="search_lineEdit">
+            <property name="placeholderText">
+             <string>请输入关键词、分类、时间、地点等进行搜索</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="search_pushButton">
+            <property name="text">
+             <string>搜索</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QListWidget" name="info_listWidget">
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <!-- 信息发布Tab -->
+      <widget class="QWidget" name="publish_tab">
+       <attribute name="title">
+        <string>信息发布</string>
+       </attribute>
+       <layout class="QFormLayout" name="publishFormLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_item_name">
+          <property name="text">
+           <string>物品名称：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="item_name_lineEdit"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_item_type">
+          <property name="text">
+           <string>信息类型：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="item_type_comboBox">
+          <item>
+           <property name="text">
+            <string>失物信息</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>招领信息</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_description">
+          <property name="text">
+           <string>物品描述：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QTextEdit" name="description_textEdit"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_time">
+          <property name="text">
+           <string>丢失/拾获时间：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDateTimeEdit" name="datetime_edit">
+          <property name="calendarPopup">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_location">
+          <property name="text">
+           <string>地点：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="location_lineEdit"/>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_image">
+          <property name="text">
+           <string>物品图片：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QPushButton" name="upload_image_pushButton">
+          <property name="text">
+           <string>上传图片</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QPushButton" name="submit_pushButton">
+          <property name="text">
+           <string>提交信息</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <!-- 个人中心Tab -->
+      <widget class="QWidget" name="profile_tab">
+       <attribute name="title">
+        <string>个人中心</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="profileLayout">
+        <item>
+         <widget class="QListWidget" name="my_posts_listWidget">
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="profileButtonLayout">
+          <item>
+           <widget class="QPushButton" name="edit_post_pushButton">
+            <property name="text">
+             <string>编辑</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="delete_post_pushButton">
+            <property name="text">
+             <string>删除</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="mark_found_pushButton">
+            <property name="text">
+             <string>标记为已找回</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>900</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_action">
+    <property name="title">
+     <string>操作</string>
+    </property>
+    <addaction name="action_publish_info"/>
+    <addaction name="action_profile"/>
+    <addaction name="action_logout"/>
+   </widget>
+   <addaction name="menu_action"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_publish_info">
+   <property name="text">
+    <string>发布信息</string>
+   </property>
+  </action>
+  <action name="action_profile">
+   <property name="text">
+    <string>个人中心</string>
+   </property>
+  </action>
+  <action name="action_logout">
+   <property name="text">
+    <string>退出登录</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui> 
