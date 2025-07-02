@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import Qt
+from .publish_tab import PublishTab
 
 
 class ChangePasswordDialog(QDialog):
@@ -57,11 +58,11 @@ class ChangePasswordDialog(QDialog):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, username: str):
+    def __init__(self, username: str, session=None):
         super().__init__()
         self.username = username
         self.login_time = datetime.now()
-        
+        self.session = session  # 新增，保存 session
         self._setup_ui()
         self._connect_signals()
         self._setup_window_properties()
@@ -74,6 +75,13 @@ class MainWindow(QMainWindow):
         ui_path = os.path.join(project_root, "ui", "main_window.ui")
         self.ui = loader.load(ui_path, self)
         self.setCentralWidget(self.ui.centralwidget)
+        self._add_tabs()
+
+    def _add_tabs(self):
+        # 用PublishTab替换信息发布Tab（假设索引1）
+        self.publish_tab = PublishTab(self, session=self.session)
+        self.ui.tabWidget.removeTab(1)
+        self.ui.tabWidget.insertTab(1, self.publish_tab.get_widget(), "信息发布")
 
     def _connect_signals(self):
         """连接信号和槽函数"""

@@ -70,13 +70,69 @@
          <widget class="QLineEdit" name="item_name_lineEdit"/>
         </item>
         <item row="1" column="0">
+         <widget class="QLabel" name="label_item_category">
+          <property name="text">
+           <string>物品类别：</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="item_category_comboBox">
+          <item>
+           <property name="text">
+            <string>书本</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>耳机</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>雨伞</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>钱包</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>钥匙</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>U盘</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>手机</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>证件</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>其他</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="2" column="0">
          <widget class="QLabel" name="label_item_type">
           <property name="text">
            <string>信息类型：</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item row="2" column="1">
          <widget class="QComboBox" name="item_type_comboBox">
           <item>
            <property name="text">
@@ -90,55 +146,55 @@
           </item>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="label_description">
           <property name="text">
            <string>物品描述：</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="3" column="1">
          <widget class="QTextEdit" name="description_textEdit"/>
         </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="label_time">
           <property name="text">
            <string>丢失/拾获时间：</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QDateTimeEdit" name="datetime_edit">
           <property name="calendarPopup">
            <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_location">
           <property name="text">
            <string>地点：</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="5" column="1">
          <widget class="QLineEdit" name="location_lineEdit"/>
         </item>
-        <item row="5" column="0">
+        <item row="6" column="0">
          <widget class="QLabel" name="label_image">
           <property name="text">
            <string>物品图片：</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="6" column="1">
          <widget class="QPushButton" name="upload_image_pushButton">
           <property name="text">
            <string>上传图片</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
+        <item row="7" column="1">
          <widget class="QPushButton" name="submit_pushButton">
           <property name="text">
            <string>提交信息</string>
