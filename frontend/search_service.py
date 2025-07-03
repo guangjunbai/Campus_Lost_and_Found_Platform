@@ -20,7 +20,6 @@ class SearchService:
 
         Args:
             keyword: 搜索关键字（物品名称、描述、地点）
-            item_type: 物品类型（'lost' 或 'found'）
             category: 物品分类
             limit: 返回数量限制
             offset: 分页偏移
@@ -125,7 +124,7 @@ class SearchService:
         根据类型搜索物品
 
         Args:
-            item_type: 物品类型（'lost' 或 'found'）
+            item_type: 物品类型（'失物信息' 或 '招领信息'）
 
         Returns:
             List[Dict]: 搜索结果列表
@@ -169,7 +168,7 @@ class SearchService:
         Returns:
             List[Dict]: 失物列表
         """
-        return self.search_by_type("lost")
+        return self.search_by_type("失物信息")
 
     def get_found_items(self, limit: int = 50) -> List[Dict]:
         """
@@ -181,7 +180,7 @@ class SearchService:
         Returns:
             List[Dict]: 招领列表
         """
-        return self.search_by_type("found")
+        return self.search_by_type("招领信息")
 
 
 # 使用示例
@@ -203,7 +202,7 @@ if __name__ == "__main__":
     # 3. 类型搜索
     lost_items = search_service.get_lost_items()
     found_items = search_service.get_found_items()
-    print(f"失物: {len(lost_items)} 个, 招领: {len(found_items)} 个")
+    print(f"失物信息: {len(lost_items)} 个, 招领信息: {len(found_items)} 个")
 
     # 4. 分类搜索
     electronic_items = search_service.search_by_category("电子产品")
@@ -212,7 +211,7 @@ if __name__ == "__main__":
     # 5. 组合搜索
     combined_results = search_service.search_items(
         keyword="手机",
-        item_type="lost",
+        item_type="失物信息",
         category="电子产品"
     )
     print(f"组合搜索结果: {len(combined_results.get('items', []))} 个")

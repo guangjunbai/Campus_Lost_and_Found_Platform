@@ -9,7 +9,11 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer, QThread, Signal
 from PySide6.QtGui import QPixmap, QFont
-from .config import get_api_url, get_timeout
+from frontend.config import get_api_url, get_timeout
+
+
+def is_remote_path(path):
+    return path.startswith("http://") or path.startswith("https://") or path.startswith("ftp://")
 
 
 class ItemDetailDialog(QDialog):
@@ -19,6 +23,7 @@ class ItemDetailDialog(QDialog):
         super().__init__(parent)
         self.item_data = item_data
         self.setup_ui()
+
 
     def setup_ui(self):
         self.setWindowTitle("详细信息")
@@ -44,23 +49,41 @@ class ItemDetailDialog(QDialog):
             image_label.setAlignment(Qt.AlignCenter)
             image_label.setMaximumHeight(200)
 
-            # 拼接HTTP图片URL
             image_path = self.item_data['image_path']
-            image_url = f"http://localhost:5000/{image_path}"
-            try:
-                response = requests.get(image_url)
-                if response.status_code == 200:
-                    pixmap = QPixmap()
-                    pixmap.loadFromData(response.content)
+            print(f"图片路径: {image_path}")
+
+            if is_remote_path(image_path):
+                try:
+                    response = requests.get(image_path, timeout=5)
+                    if response.status_code == 200:
+                        temp_path = "temp_image.png"
+                        with open(temp_path, "wb") as f:
+                            f.write(response.content)
+                        pixmap = QPixmap(temp_path)
+                        os.remove(temp_path)
+                        if not pixmap.isNull():
+                            pixmap = pixmap.scaled(300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                            image_label.setPixmap(pixmap)
+                        else:
+                            image_label.setText("远程图片加载失败")
+                    else:
+                        image_label.setText("远程图片加载失败")
+                except Exception as e:
+                    print(f"远程图片加载异常: {e}")
+                    image_label.setText("远程图片加载异常")
+            else:
+                absolute_path = os.path.abspath(image_path)
+                print(f"绝对路径: {absolute_path}")
+                print(f"文件存在: {os.path.exists(absolute_path)}")
+                if os.path.exists(absolute_path):
+                    pixmap = QPixmap(absolute_path)
                     if not pixmap.isNull():
                         pixmap = pixmap.scaled(300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                         image_label.setPixmap(pixmap)
                     else:
                         image_label.setText("图片加载失败")
                 else:
-                    image_label.setText("图片加载失败")
-            except Exception as e:
-                image_label.setText("图片加载异常")
+                    image_label.setText("图片文件不存在")
 
             scroll_layout.addWidget(image_label)
 
@@ -195,17 +218,21 @@ class SearchTab(QWidget):
         filter_layout.addWidget(QLabel("类型:"))
         self.type_combo = QComboBox()
         self.type_combo.addItem("全部", "")
-        self.type_combo.addItem("失物", "lost")
-        self.type_combo.addItem("招领", "found")
+        self.type_combo.addItem("失物信息", "失物信息")
+        self.type_combo.addItem("招领信息", "招领信息")
         filter_layout.addWidget(self.type_combo)
 
         filter_layout.addWidget(QLabel("分类:"))
         self.category_combo = QComboBox()
         self.category_combo.addItem("全部", "")
-        self.category_combo.addItem("电子产品", "电子产品")
-        self.category_combo.addItem("书籍资料", "书籍资料")
-        self.category_combo.addItem("证件卡片", "证件卡片")
-        self.category_combo.addItem("衣物饰品", "衣物饰品")
+        self.category_combo.addItem("书本", "书本")
+        self.category_combo.addItem("耳机", "耳机")
+        self.category_combo.addItem("雨伞", "雨伞")
+        self.category_combo.addItem("钱包", "钱包")
+        self.category_combo.addItem("钥匙", "钥匙")
+        self.category_combo.addItem("U盘", "U盘")
+        self.category_combo.addItem("手机", "手机")
+        self.category_combo.addItem("证件", "证件")
         self.category_combo.addItem("其他", "其他")
         filter_layout.addWidget(self.category_combo)
 
@@ -276,6 +303,8 @@ class SearchTab(QWidget):
         keyword = self.search_input.text().strip()
         item_type = self.type_combo.currentData()
         category = self.category_combo.currentData()
+
+        #print(f"Keyword: {keyword}, Item Type: {item_type}, Category: {category}")  # 调试打印
 
         # 停止之前的搜索线程
         if self.search_worker and self.search_worker.isRunning():
