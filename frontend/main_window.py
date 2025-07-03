@@ -108,7 +108,14 @@ class MainWindow(QMainWindow):
                         widget = item.widget()
                         widget.setParent(None)
                         break
-                self.center_tab = CenterTab(self.username)
+                # 绑定按钮到CenterTab
+                self.center_tab = CenterTab(
+                    self.username,
+                    edit_btn=getattr(self.ui, 'edit_post_pushButton', None),
+                    delete_btn=getattr(self.ui, 'delete_post_pushButton', None),
+                    status_btn=getattr(self.ui, 'mark_found_pushButton', None),
+                    session=self.session
+                )
                 layout.insertWidget(0, self.center_tab.table)
         except Exception as e:
             print(f"添加搜索标签页或个人中心失败: {e}")

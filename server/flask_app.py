@@ -395,5 +395,123 @@ def get_item_detail(item_id):
         return jsonify({"success": False, "message": f"查询失败: {str(e)}"}), 500
 
 
+@app.route('/api/edit_item', methods=['POST'])
+def edit_item():
+    """
+    编辑物品信息接口。
+    仅允许物品发布者本人编辑。
+    可修改字段：type, item_name, item_category, description, image_path, time, location。
+    前端需传递：id, 以及要修改的字段。
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，无法编辑"}), 401
+    data = request.json
+    item_id = data.get('id')
+    # 校验参数
+    if not item_id:
+        return jsonify({"success": False, "message": "缺少物品ID"}), 400
+    # 只允许修改这些字段
+    fields = ['type', 'item_name', 'item_category', 'description', 'image_path', 'time', 'location']
+    updates = {k: data[k] for k in fields if k in data}
+    if not updates:
+        return jsonify({"success": False, "message": "没有可修改的字段"}), 400
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        # 检查权限：只能编辑自己的物品
+        cursor.execute("SELECT user_id FROM posts WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"success": False, "message": "物品不存在"}), 404
+        if row[0] != user_id:
+            conn.close()
+            return jsonify({"success": False, "message": "无权编辑他人发布的物品"}), 403
+        # 构造SQL
+        set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
+        values = list(updates.values()) + [item_id]
+        sql = f"UPDATE posts SET {set_clause} WHERE id = ?"
+        cursor.execute(sql, values)
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "编辑成功"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/delete_item', methods=['POST'])
+def delete_item():
+    """
+    删除物品接口。
+    仅允许物品发布者本人删除。
+    前端需传递：id。
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，无法删除"}), 401
+    data = request.json
+    item_id = data.get('id')
+    if not item_id:
+        return jsonify({"success": False, "message": "缺少物品ID"}), 400
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        # 检查权限：只能删除自己的物品
+        cursor.execute("SELECT user_id FROM posts WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"success": False, "message": "物品不存在"}), 404
+        if row[0] != user_id:
+            conn.close()
+            return jsonify({"success": False, "message": "无权删除他人发布的物品"}), 403
+        # 删除数据
+        cursor.execute("DELETE FROM posts WHERE id = ?", (item_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "删除成功"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/update_status', methods=['POST'])
+def update_status():
+    """
+    修改物品状态接口。
+    仅允许物品发布者本人修改。
+    前端需传递：id。
+    功能：active <-> found 状态切换。
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，无法修改状态"}), 401
+    data = request.json
+    item_id = data.get('id')
+    if not item_id:
+        return jsonify({"success": False, "message": "缺少物品ID"}), 400
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        # 检查权限：只能操作自己的物品
+        cursor.execute("SELECT user_id, status FROM posts WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"success": False, "message": "物品不存在"}), 404
+        if row[0] != user_id:
+            conn.close()
+            return jsonify({"success": False, "message": "无权操作他人发布的物品"}), 403
+        # 状态切换
+        current_status = row[1]
+        new_status = 'found' if current_status == 'active' else 'active'
+        cursor.execute("UPDATE posts SET status = ? WHERE id = ?", (new_status, item_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": f"状态已变更为{new_status}"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
