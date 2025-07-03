@@ -8,6 +8,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import Qt
 from .publish_tab import PublishTab
+from .search_tab import SearchTab
+from frontend.search_service import SearchService
+from PySide6.QtWidgets import QListWidgetItem, QMessageBox
+import requests
 
 
 class ChangePasswordDialog(QDialog):
@@ -67,6 +71,9 @@ class MainWindow(QMainWindow):
         self._connect_signals()#连接信号和槽函数
         self._setup_window_properties()#设置窗口属性
         self._initialize_data()#初始化数据
+        #self._setup_info_wall_tab()
+        #self.search_tab = SearchTab()
+        #self.ui.tabWidget.addTab(self.search_tab, "信息展示墙")
 
     def _setup_ui(self):
         """设置用户界面"""
@@ -80,6 +87,29 @@ class MainWindow(QMainWindow):
     def _add_tabs(self):
         # 直接将UI里的publish_tab widget传递给自定义逻辑类
         self.publish_tab = PublishTab(self.ui.publish_tab, session=self.session)
+        # 信息展示墙Tab初始化
+        self.info_wall_tab = self.ui.info_wall_tab
+        self.info_listWidget = self.ui.info_listWidget
+        self.search_lineEdit = self.ui.search_lineEdit
+        self.search_pushButton = self.ui.search_pushButton
+
+        # 绑定信号
+        self.search_pushButton.clicked.connect(self._handle_info_wall_search)
+        self.info_listWidget.itemDoubleClicked.connect(self._show_info_detail)
+        # 启动时加载全部信息
+        self._load_info_wall_items()
+
+        # 添加搜索标签页
+        # 注意：这里需要根据实际的UI文件结构调整
+        # 如果UI文件中没有search_tab，需要动态创建
+        try:
+            self.search_tab = SearchTab()
+            # 将搜索标签页添加到主窗口的标签页控件中
+            if hasattr(self.ui, 'tabWidget'):
+                self.ui.tabWidget.addTab(self.search_tab, "搜索")
+        except Exception as e:
+            print(f"添加搜索标签页失败: {e}")
+
 
     def _connect_signals(self):
         """连接信号和槽函数"""
@@ -156,6 +186,47 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
+    def _load_info_wall_items(self, keyword=""):
+        """加载信息展示墙数据"""
+        self.info_listWidget.clear()
+        search_service = SearchService()
+        if keyword:
+            items = search_service.search_by_keyword(keyword)
+        else:
+            items = search_service.get_all_items(limit=100)
+        if not items:
+            self.info_listWidget.addItem("暂无信息")
+            return
+        for item in items:
+            display_text = f"[{item.get('type', '')}] {item.get('item_name', '')} - {item.get('location', '')} ({item.get('time', '')})"
+            list_item = QListWidgetItem(display_text)
+            list_item.setData(256, item)  # Qt.UserRole = 256
+            self.info_listWidget.addItem(list_item)
+
+    def _handle_info_wall_search(self):
+        """处理信息墙搜索"""
+        keyword = self.search_lineEdit.text().strip()
+        self._load_info_wall_items(keyword=keyword)
+
+    def _show_info_detail(self, list_item):
+        """弹出详情窗口"""
+        item = list_item.data(256)
+        if not item:
+            return
+        detail = (
+            f"物品名称: {item.get('item_name', '')}\n"
+            f"类型: {item.get('type', '')}\n"
+            f"分类: {item.get('item_category', '')}\n"
+            f"描述: {item.get('description', '')}\n"
+            f"时间: {item.get('time', '')}\n"
+            f"地点: {item.get('location', '')}\n"
+            f"发布者: {item.get('publisher', '')}\n"
+            f"状态: {item.get('status', '')}\n"
+            f"发布时间: {item.get('created_at', '')}\n"
+        )
+        QMessageBox.information(self, "详细信息", detail)
+
 
 
 if __name__ == "__main__":

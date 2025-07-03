@@ -234,5 +234,166 @@ def post_info():
         return jsonify({"success": False, "message": str(e)})
 
 
+@app.route('/api/get_lost_items', methods=['GET'])
+def get_lost_items():
+    """获取失物招领信息列表，支持关键字搜索"""
+    try:
+        # 获取查询参数
+        keyword = request.args.get('keyword', '').strip()
+        item_type = request.args.get('type', '')  # 可选：按类型筛选
+        category = request.args.get('category', '')  # 可选：按分类筛选
+        limit = request.args.get('limit', 50, type=int)  # 限制返回数量
+        offset = request.args.get('offset', 0, type=int)  # 分页偏移
+
+        conn = get_database_connection()
+        cursor = conn.cursor()
+
+        # 构建查询条件
+        where_conditions = ["1=1"]  # 始终为真的条件，便于动态拼接
+        params = []
+
+        if keyword:
+            # 使用LIKE进行模糊搜索，支持物品名称、描述、地点
+            where_conditions.append("""
+                (item_name LIKE ? OR description LIKE ? OR location LIKE ?)
+            """)
+            keyword_param = f"%{keyword}%"
+            params.extend([keyword_param, keyword_param, keyword_param])
+
+        if item_type:
+            where_conditions.append("type = ?")
+            params.append(item_type)
+
+        if category:
+            where_conditions.append("item_category = ?")
+            params.append(category)
+
+        # 构建完整的SQL查询
+        sql = f"""
+            SELECT 
+                p.id,
+                p.item_name,
+                p.item_category,
+                p.type,
+                p.description,
+                p.image_path,
+                p.time,
+                p.location,
+                p.status,
+                p.created_at,
+                u.username as publisher
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE {' AND '.join(where_conditions)}
+            ORDER BY p.created_at DESC
+            LIMIT ? OFFSET ?
+        """
+
+        params.extend([limit, offset])
+
+        # 执行查询
+        cursor.execute(sql, params)
+        results = cursor.fetchall()
+
+        # 转换为字典列表
+        items = []
+        for row in results:
+            item = {
+                'id': row[0],
+                'item_name': row[1],
+                'item_category': row[2],
+                'type': row[3],
+                'description': row[4],
+                'image_path': row[5],
+                'time': row[6],
+                'location': row[7],
+                'status': row[8],
+                'created_at': row[9],
+                'publisher': row[10]
+            }
+            items.append(item)
+
+        # 获取总数（用于分页）
+        count_sql = f"""
+            SELECT COUNT(*) 
+            FROM posts p
+            WHERE {' AND '.join(where_conditions)}
+        """
+        cursor.execute(count_sql, params[:-2])  # 去掉LIMIT和OFFSET参数
+        total_count = cursor.fetchone()[0]
+
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "items": items,
+                "total": total_count,
+                "limit": limit,
+                "offset": offset
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"查询失败: {str(e)}"}), 500
+
+
+@app.route('/api/get_item_detail/<int:item_id>', methods=['GET'])
+def get_item_detail(item_id):
+    """获取单个失物招领信息的详细信息"""
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+
+        sql = """
+            SELECT 
+                p.id,
+                p.item_name,
+                p.item_category,
+                p.type,
+                p.description,
+                p.image_path,
+                p.time,
+                p.location,
+                p.status,
+                p.created_at,
+                u.username as publisher,
+                u.id as publisher_id
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.id = ?
+        """
+
+        cursor.execute(sql, (item_id,))
+        result = cursor.fetchone()
+        conn.close()
+
+        if not result:
+            return jsonify({"success": False, "message": "信息不存在"}), 404
+
+        item = {
+            'id': result[0],
+            'item_name': result[1],
+            'item_category': result[2],
+            'type': result[3],
+            'description': result[4],
+            'image_path': result[5],
+            'time': result[6],
+            'location': result[7],
+            'status': result[8],
+            'created_at': result[9],
+            'publisher': result[10],
+            'publisher_id': result[11]
+        }
+
+        return jsonify({
+            "success": True,
+            "data": item
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"查询失败: {str(e)}"}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
