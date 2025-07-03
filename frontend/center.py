@@ -1,8 +1,8 @@
 import requests
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QPushButton, QInputDialog
+    QWidget, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QPushButton, QInputDialog, QDialog, QFormLayout, QComboBox, QLineEdit, QDialogButtonBox, QTextEdit, QDateTimeEdit
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QDateTime
 from .config import get_api_url, get_timeout
 
 class CenterTab(QWidget):
@@ -137,25 +137,74 @@ class CenterTab(QWidget):
             "type": self.table.item(row, 2).text(),
             "item_name": self.table.item(row, 1).text(),
             "item_category": self.table.item(row, 3).text(),
-            "description": "",  # 可扩展：弹窗里加描述输入框
-            "image_path": "",   # 可扩展：弹窗里加图片上传
+            "description": self.current_items[row].get("description", ""),
+            "image_path": self.current_items[row].get("image_path", ""),
             "time": self.table.item(row, 5).text(),
             "location": self.table.item(row, 4).text(),
         }
-        # 弹出对话框让用户编辑（这里只做简单输入框示例）
-        new_name, ok = QInputDialog.getText(self, "编辑物品名称", "物品名称：", text=item_data["item_name"])
-        if not ok:
-            return
-        item_data["item_name"] = new_name
-        import requests
-        url = get_api_url("edit_item")
+        dialog = EditItemDialog(item_data, self)
+        if dialog.exec() == QDialog.Accepted:
+            new_data = dialog.get_data()
+            item_data.update(new_data)
+            import requests
+            url = get_api_url("edit_item")
+            try:
+                resp = requests.post(url, json=item_data, cookies=self.session.cookies if self.session else None)
+                result = resp.json()
+                if result.get("success"):
+                    QMessageBox.information(self, "成功", "编辑成功")
+                    self.load_my_items()
+                else:
+                    QMessageBox.warning(self, "失败", result.get("message", "编辑失败"))
+            except Exception as e:
+                QMessageBox.warning(self, "网络错误", str(e))
+
+class EditItemDialog(QDialog):
+    """多字段编辑对话框"""
+    def __init__(self, item_data, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("编辑物品信息")
+        self.item_data = item_data
+        layout = QFormLayout(self)
+        # 物品名称
+        self.name_edit = QLineEdit(item_data["item_name"])
+        layout.addRow("物品名称", self.name_edit)
+        # 类型
+        self.type_combo = QComboBox()
+        self.type_combo.addItems(["失物信息", "招领信息"])
+        self.type_combo.setCurrentText(item_data["type"])
+        layout.addRow("类型", self.type_combo)
+        # 分类
+        self.category_combo = QComboBox()
+        self.category_combo.addItems(["书本", "电子产品", "证件卡片", "衣物饰品", "其他"])
+        self.category_combo.setCurrentText(item_data["item_category"])
+        layout.addRow("分类", self.category_combo)
+        # 描述
+        self.desc_edit = QTextEdit(item_data.get("description", ""))
+        layout.addRow("描述", self.desc_edit)
+        # 时间
+        self.time_edit = QDateTimeEdit()
         try:
-            resp = requests.post(url, json=item_data, cookies=self.session.cookies if self.session else None)
-            result = resp.json()
-            if result.get("success"):
-                QMessageBox.information(self, "成功", "编辑成功")
-                self.load_my_items()
-            else:
-                QMessageBox.warning(self, "失败", result.get("message", "编辑失败"))
-        except Exception as e:
-            QMessageBox.warning(self, "网络错误", str(e)) 
+            dt = QDateTime.fromString(item_data["time"], "yyyy-MM-dd HH:mm:ss")
+            if dt.isValid():
+                self.time_edit.setDateTime(dt)
+        except:
+            pass
+        layout.addRow("时间", self.time_edit)
+        # 地点
+        self.location_edit = QLineEdit(item_data["location"])
+        layout.addRow("地点", self.location_edit)
+        # 按钮
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addRow(button_box)
+    def get_data(self):
+        return {
+            "item_name": self.name_edit.text(),
+            "type": self.type_combo.currentText(),
+            "item_category": self.category_combo.currentText(),
+            "description": self.desc_edit.toPlainText(),
+            "time": self.time_edit.dateTime().toString("yyyy-MM-dd HH:mm:ss"),
+            "location": self.location_edit.text(),
+        } 

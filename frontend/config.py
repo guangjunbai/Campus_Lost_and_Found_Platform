@@ -29,7 +29,11 @@ API_ENDPOINTS = {
     "user_info": "/api/user_info",#用户信息
     "post": "/api/post",# 新增发布接口
     "get_lost_items": "/api/get_lost_items",  # 搜索失物招领信息
-    "get_item_detail": "/api/get_item_detail"  # 获取物品详情
+    "get_item_detail": "/api/get_item_detail",  # 获取物品详情
+    # 新增接口
+    "edit_item": "/api/edit_item",
+    "delete_item": "/api/delete_item",
+    "update_status": "/api/update_status"
 }
 
 def get_api_url(endpoint: str) -> str:
