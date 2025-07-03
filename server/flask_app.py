@@ -394,6 +394,11 @@ def get_item_detail(item_id):
     except Exception as e:
         return jsonify({"success": False, "message": f"查询失败: {str(e)}"}), 500
 
+@app.route('/data/uploads/<filename>')
+def uploaded_file(filename):
+    # 允许通过HTTP访问图片
+    return send_from_directory(os.path.join(os.path.dirname(__file__), '../data/uploads'), filename)
+
 
 @app.route('/api/edit_item', methods=['POST'])
 def edit_item():
