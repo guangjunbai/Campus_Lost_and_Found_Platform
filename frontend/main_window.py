@@ -12,6 +12,7 @@ from .search_tab import SearchTab
 from frontend.search_service import SearchService
 from PySide6.QtWidgets import QListWidgetItem, QMessageBox
 import requests
+from .center import CenterTab
 
 
 class ChangePasswordDialog(QDialog):
@@ -85,30 +86,32 @@ class MainWindow(QMainWindow):
         self._add_tabs()#添加标签页
 
     def _add_tabs(self):
-        # 直接将UI里的publish_tab widget传递给自定义逻辑类
         self.publish_tab = PublishTab(self.ui.publish_tab, session=self.session)
-        # 信息展示墙Tab初始化
         self.info_wall_tab = self.ui.info_wall_tab
         self.info_listWidget = self.ui.info_listWidget
         self.search_lineEdit = self.ui.search_lineEdit
         self.search_pushButton = self.ui.search_pushButton
 
-        # 绑定信号
         self.search_pushButton.clicked.connect(self._handle_info_wall_search)
         self.info_listWidget.itemDoubleClicked.connect(self._show_info_detail)
-        # 启动时加载全部信息
         self._load_info_wall_items()
 
-        # 添加搜索标签页
-        # 注意：这里需要根据实际的UI文件结构调整
-        # 如果UI文件中没有search_tab，需要动态创建
         try:
             self.search_tab = SearchTab()
-            # 将搜索标签页添加到主窗口的标签页控件中
             if hasattr(self.ui, 'tabWidget'):
                 self.ui.tabWidget.addTab(self.search_tab, "搜索")
+            if hasattr(self.ui, 'profile_tab') and hasattr(self.ui, 'my_posts_listWidget'):
+                layout = self.ui.profile_tab.layout()
+                for i in range(layout.count()):
+                    item = layout.itemAt(i)
+                    if item.widget() and item.widget().objectName() == 'my_posts_listWidget':
+                        widget = item.widget()
+                        widget.setParent(None)
+                        break
+                self.center_tab = CenterTab(self.username)
+                layout.insertWidget(0, self.center_tab.table)
         except Exception as e:
-            print(f"添加搜索标签页失败: {e}")
+            print(f"添加搜索标签页或个人中心失败: {e}")
 
 
     def _connect_signals(self):
