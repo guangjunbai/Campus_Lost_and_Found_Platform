@@ -481,7 +481,7 @@ def update_status():
     修改物品状态接口。
     仅允许物品发布者本人修改。
     前端需传递：id。
-    功能：active <-> found 状态切换。
+    功能：active <-> 招领信息 状态切换。
     """
     user_id = session.get('user_id')
     if not user_id:
