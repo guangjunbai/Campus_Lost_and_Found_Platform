@@ -44,17 +44,23 @@ class ItemDetailDialog(QDialog):
             image_label.setAlignment(Qt.AlignCenter)
             image_label.setMaximumHeight(200)
 
-            # 尝试加载图片
+            # 拼接HTTP图片URL
             image_path = self.item_data['image_path']
-            if os.path.exists(image_path):
-                pixmap = QPixmap(image_path)
-                if not pixmap.isNull():
-                    pixmap = pixmap.scaled(300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                    image_label.setPixmap(pixmap)
+            image_url = f"http://localhost:5000/{image_path}"
+            try:
+                response = requests.get(image_url)
+                if response.status_code == 200:
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(response.content)
+                    if not pixmap.isNull():
+                        pixmap = pixmap.scaled(300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                        image_label.setPixmap(pixmap)
+                    else:
+                        image_label.setText("图片加载失败")
                 else:
                     image_label.setText("图片加载失败")
-            else:
-                image_label.setText("图片文件不存在")
+            except Exception as e:
+                image_label.setText("图片加载异常")
 
             scroll_layout.addWidget(image_label)
 
