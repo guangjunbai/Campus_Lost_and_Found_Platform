@@ -10,13 +10,13 @@ DEV_CONFIG = {
 
 # 生产环境配置
 PROD_CONFIG = {
-    "host": "your-server-ip.com",  # 替换为实际的服务器IP或域名
+    "host": "10.21.254.7",  # 替换为实际的服务器IP或域名
     "port": 5000,
     "timeout": 30
 }
 
 # 当前使用的配置（可以在这里切换环境）
-CURRENT_CONFIG = DEV_CONFIG
+CURRENT_CONFIG = PROD_CONFIG
 
 # 构建服务器基础URL
 SERVER_BASE_URL = f"http://{CURRENT_CONFIG['host']}:{CURRENT_CONFIG['port']}"
@@ -27,7 +27,9 @@ API_ENDPOINTS = {
     "register": "/api/register",#注册
     "logout": "/api/logout",#退出
     "user_info": "/api/user_info",#用户信息
-    "post": "/api/post"  # 新增发布接口
+    "post": "/api/post",# 新增发布接口
+    "get_lost_items": "/api/get_lost_items",  # 搜索失物招领信息
+    "get_item_detail": "/api/get_item_detail"  # 获取物品详情
 }
 
 def get_api_url(endpoint: str) -> str:
