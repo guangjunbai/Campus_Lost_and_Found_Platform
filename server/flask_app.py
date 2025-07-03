@@ -5,6 +5,7 @@ import secrets
 from werkzeug.utils import secure_filename
 import time as pytime
 import os
+from datetime import datetime  # 添加必要的包
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于 session 加密，实际项目请用更复杂的密钥
@@ -393,6 +394,214 @@ def get_item_detail(item_id):
 
     except Exception as e:
         return jsonify({"success": False, "message": f"查询失败: {str(e)}"}), 500
+
+
+@app.route('/api/my_posts', methods=['GET'])
+def get_my_posts():
+    """
+    获取当前用户发布的所有物品信息
+    返回格式: {success: bool, message: str, data: list}
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，请先登录"}), 401
+
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        # 查询当前用户的所有物品：按创建时间倒序排列
+        cursor.execute(
+            "SELECT id, user_id, type, item_name, item_category, description, "
+            "image_path, time, location, status, created_at "
+            "FROM posts WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,)
+        )
+        items = cursor.fetchall()
+
+        if not items:
+            conn.close()
+            return jsonify({
+                "success": True,
+                "message": "您还没有发布任何物品",
+                "data": []
+            })
+
+        columns = [col[0] for col in cursor.description]
+        result = []
+        for item in items:
+            item_dict = dict(zip(columns, item))
+            # 处理图片路径 - 生成前端可访问的URL
+            if item_dict.get('image_path'):
+                filename = os.path.basename(item_dict['image_path'])
+                item_dict['image_url'] = f"/uploads/{filename}"
+            # 优化时间显示格式
+            for time_field in ['time', 'created_at']:
+                if item_dict.get(time_field):
+                    try:
+                        dt = datetime.strptime(item_dict[time_field], "%Y-%m-%d %H:%M:%S")
+                        item_dict[time_field] = dt.strftime("%Y-%m-%d %H:%M")
+                    except:
+                        pass
+            result.append(item_dict)
+        conn.close()
+        return jsonify({
+            "success": True,
+            "message": "获取成功",
+            "data": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"服务器错误: {str(e)}"
+        }), 500
+
+
+@app.route('/api/update_item', methods=['POST'])
+def update_item():
+    """
+    更新物品状态
+    请求格式: {item_id: int, status: str}
+    返回格式: {success: bool, message: str}
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，请先登录"}), 401
+    data = request.json
+    if not data:
+        return jsonify({"success": False, "message": "无效的请求数据"}), 400
+    item_id = data.get('item_id')
+    new_status = data.get('status')
+    if not item_id:
+        return jsonify({"success": False, "message": "缺少物品ID"}), 400
+    if not new_status:
+        return jsonify({"success": False, "message": "缺少状态参数"}), 400
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, user_id FROM posts WHERE id = ?", (item_id,))
+        item = cursor.fetchone()
+        if not item:
+            conn.close()
+            return jsonify({"success": False, "message": "物品不存在"}), 404
+        if item[1] != user_id:
+            conn.close()
+            return jsonify({"success": False, "message": "无权修改此物品"}), 403
+        cursor.execute(
+            "UPDATE posts SET status = ? WHERE id = ?",
+            (new_status, item_id)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "message": "状态更新成功"
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"更新失败: {str(e)}"
+        }), 500
+
+
+@app.route('/api/delete_item', methods=['POST'])
+def delete_item():
+    """
+    删除物品及其关联的图片
+    请求格式: {item_id: int}
+    返回格式: {success: bool, message: str}
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，请先登录"}), 401
+    data = request.json
+    if not data:
+        return jsonify({"success": False, "message": "无效的请求数据"}), 400
+    item_id = data.get('item_id')
+    if not item_id:
+        return jsonify({"success": False, "message": "缺少物品ID"}), 400
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, user_id, image_path FROM posts WHERE id = ?",
+            (item_id,)
+        )
+        item = cursor.fetchone()
+        if not item:
+            conn.close()
+            return jsonify({"success": False, "message": "物品不存在"}), 404
+        if item[1] != user_id:
+            conn.close()
+            return jsonify({"success": False, "message": "无权删除此物品"}), 403
+        image_path = item[2]
+        if image_path:
+            try:
+                base_dir = os.path.abspath(os.path.dirname(__file__))
+                full_path = os.path.join(base_dir, image_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+                    print(f"成功删除图片: {full_path}")
+                else:
+                    print(f"图片文件不存在: {full_path}")
+            except OSError as e:
+                print(f"删除图片失败: {e}")
+        cursor.execute("DELETE FROM posts WHERE id = ?", (item_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "message": "物品删除成功"
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"删除失败: {str(e)}"
+        }), 500
+
+
+@app.route('/api/edit_item', methods=['POST'])
+def edit_item():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "未登录，请先登录"}), 401
+    data = request.json
+    item_id = data.get('item_id')
+    if not item_id:
+        return jsonify({"success": False, "message": "缺少物品ID"}), 400
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM posts WHERE id = ?", (item_id,))
+        item = cursor.fetchone()
+        if not item or item[0] != user_id:
+            conn.close()
+            return jsonify({"success": False, "message": "无权编辑此物品"}), 403
+        cursor.execute(
+            """UPDATE posts SET
+                type=?,
+                item_name=?,
+                item_category=?,
+                description=?,
+                image_path=?,
+                time=?,
+                location=?
+            WHERE id=?""",
+            (
+                data.get('type'),
+                data.get('item_name'),
+                data.get('item_category'),
+                data.get('description'),
+                data.get('image_path'),
+                data.get('time'),
+                data.get('location'),
+                item_id
+            )
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "编辑成功"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"编辑失败: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
