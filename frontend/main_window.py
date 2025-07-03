@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import Qt
 from .publish_tab import PublishTab
-from .search_tab import SearchTab
+from .search_tab import SearchTab, ItemDetailDialog
 from frontend.search_service import SearchService
 from PySide6.QtWidgets import QListWidgetItem, QMessageBox
 import requests
@@ -208,6 +208,13 @@ class MainWindow(QMainWindow):
         if not items:
             self.info_listWidget.addItem("暂无信息")
             return
+        # 用 datetime 解析 time 字段排序，保证从新到旧
+        def parse_time(item):
+            try:
+                return datetime.strptime(item.get('time', ''), "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                return datetime.min  # 无效时间排最后
+        items.sort(key=parse_time, reverse=True)
         for item in items:
             display_text = f"[{item.get('type', '')}] {item.get('item_name', '')} - {item.get('location', '')} ({item.get('time', '')})"
             list_item = QListWidgetItem(display_text)
@@ -220,22 +227,12 @@ class MainWindow(QMainWindow):
         self._load_info_wall_items(keyword=keyword)
 
     def _show_info_detail(self, list_item):
-        """弹出详情窗口"""
+        """弹出详情窗口（带图片）"""
         item = list_item.data(256)
         if not item:
             return
-        detail = (
-            f"物品名称: {item.get('item_name', '')}\n"
-            f"类型: {item.get('type', '')}\n"
-            f"分类: {item.get('item_category', '')}\n"
-            f"描述: {item.get('description', '')}\n"
-            f"时间: {item.get('time', '')}\n"
-            f"地点: {item.get('location', '')}\n"
-            f"发布者: {item.get('publisher', '')}\n"
-            f"状态: {item.get('status', '')}\n"
-            f"发布时间: {item.get('created_at', '')}\n"
-        )
-        QMessageBox.information(self, "详细信息", detail)
+        dialog = ItemDetailDialog(item, self)
+        dialog.exec()
 
 
 

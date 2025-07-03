@@ -1,4 +1,4 @@
-import sqlite3
+SELECT id, created_at FROM posts ORDER BY created_at;import sqlite3
 import os
 
 DB_PATH = r"D:\SqliteDatabase\user.db"
